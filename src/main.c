@@ -9,6 +9,9 @@
 #include "common/cmn_datatypes.h"
 
 #include "parport/parport.h"
+#include "utils/utils.h"
+
+#define DEF_SLEEPTIME 100000
 
 #define PPORT_NAME_BUF_SIZE 50
 #define FNAME_BUF_SIZE 256
@@ -78,6 +81,35 @@ int main(int argc, char *argv[]) {
 		return EXIT_FAILURE;
 	}
 
+	// TEST TEST TEST
+/*
+	parport_write(PP_CONTROL, 0x0F);
+	util_sleep(DEF_SLEEPTIME);
+	parport_write(PP_DATA, 0x00);
+	for (int cnt = 0; cnt < 20; cnt++) {
+		util_sleep(DEF_SLEEPTIME);
+		parport_write(PP_CONTROL, 0x0A);
+		parport_write(PP_DATA, cnt);
+		util_sleep(DEF_SLEEPTIME);
+		parport_write(PP_CONTROL, 0x0B);
+	}
+*/
+
+
+	parport_write(PP_CONTROL, 0x01);
+	util_sleep(DEF_SLEEPTIME);
+	parport_write(PP_CONTROL, 0x03);
+	util_sleep(DEF_SLEEPTIME);
+	for (int cnt = 0; cnt < 10; cnt++) {
+		util_sleep(DEF_SLEEPTIME);
+		parport_write(PP_CONTROL, 0x02 + 1);
+		util_sleep(DEF_SLEEPTIME);
+		fprintf(stdout, "CONTENT %.2X\n", parport_read(PP_STATUS));
+		parport_write(PP_CONTROL, 0x02 + 0);
+		util_sleep(DEF_SLEEPTIME);
+		fprintf(stdout, "CONTENT %.2X\n", parport_read(PP_STATUS));
+	}
+	
 	return EXIT_SUCCESS;
 }
 

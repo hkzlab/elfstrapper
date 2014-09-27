@@ -42,6 +42,22 @@ int8_t parport_init(const char *pdev) {
 		return -1;
 	}
 
+	int mode = IEEE1284_MODE_COMPAT;
+	if (ioctl(pp_fd, PPSETMODE, &mode)) {
+		perror("PPSETMODE");
+      	close(pp_fd);
+		
+		return -1;
+   }
+
+	int ddir = 0;
+	if (ioctl(pp_fd, PPDATADIR, &ddir)) {
+		perror("PPDATADIR");
+		close(pp_fd);
+
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -66,11 +82,8 @@ uint8_t parport_read(PP_REGISTER reg) {
 void parport_write(PP_REGISTER reg, uint8_t data) {
 	fprintf(stdout, "parport::parport_write(%u, 0x%.2X)\n", reg, data);
 
-	int ddir = 0;
-
 	switch(reg) {
 		case PP_DATA:
-			ioctl(pp_fd, PPDATADIR, &ddir);
 			ioctl(pp_fd, PPWDATA, &data);
 			break;
 		case PP_STATUS: // This can't be written
