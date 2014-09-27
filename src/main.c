@@ -8,6 +8,8 @@
 #include "common/defines.h"
 #include "common/cmn_datatypes.h"
 
+#include "parport/parport.h"
+
 #define PPORT_NAME_BUF_SIZE 50
 #define FNAME_BUF_SIZE 256
 static char parport_device[PPORT_NAME_BUF_SIZE];
@@ -23,7 +25,7 @@ int main(int argc, char *argv[]) {
 	// Parse the command line
 	while ((opt = getopt(argc, argv, "d:f:hvrws:l:")) != -1) {
 		switch(opt) {
-			case 'f':
+			case 'f': // I/O Filename 
 				f_flag = 1;
 				strncpy(fname_buffer, optarg, FNAME_BUF_SIZE - 1);
 				break;
@@ -61,7 +63,7 @@ int main(int argc, char *argv[]) {
 		return EXIT_SUCCESS;
 	}
 
-	if (!d_flag || !f_flag) {
+	if (!d_flag/* || !f_flag*/) {
 		fprintf(stderr, "Missing mandatory parameters!\n");
 		print_usage(argv[0]);
 
@@ -70,6 +72,11 @@ int main(int argc, char *argv[]) {
 
 	// Register the exit handler
 	atexit(exit_cleanup);
+
+	if (parport_init(parport_device) < 0) { // Initialize the parallel port module
+		fprintf(stderr, "Failure to initialize the parallel port device %s .\n", parport_device);
+		return EXIT_FAILURE;
+	}
 
 	return EXIT_SUCCESS;
 }
@@ -82,6 +89,10 @@ static void print_usage(char *progname) {
 }
 
 static void exit_cleanup() {
+
+	// De-initialize the parallel port
+	parport_deinit();
+
 	return;
 }
 
