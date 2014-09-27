@@ -11,7 +11,7 @@
 #include "parport/parport.h"
 #include "utils/utils.h"
 
-#define DEF_SLEEPTIME 100000
+#define DEF_SLEEPTIME 1000
 
 #define PPORT_NAME_BUF_SIZE 50
 #define FNAME_BUF_SIZE 256
@@ -82,25 +82,23 @@ int main(int argc, char *argv[]) {
 	}
 
 	// TEST TEST TEST
-/*
+
 	parport_write(PP_CONTROL, 0x0F);
 	util_sleep(DEF_SLEEPTIME);
-	parport_write(PP_DATA, 0x00);
-	for (int cnt = 0; cnt < 20; cnt++) {
+	for (int cnt = 0; cnt < 0xFFFF; cnt++) {
+		parport_write(PP_DATA, cnt);
 		util_sleep(DEF_SLEEPTIME);
 		parport_write(PP_CONTROL, 0x0A);
 		parport_write(PP_DATA, cnt);
 		util_sleep(DEF_SLEEPTIME);
 		parport_write(PP_CONTROL, 0x0B);
 	}
-*/
-
 
 	parport_write(PP_CONTROL, 0x01);
 	util_sleep(DEF_SLEEPTIME);
 	parport_write(PP_CONTROL, 0x03);
 	util_sleep(DEF_SLEEPTIME);
-	for (int cnt = 0; cnt < 10; cnt++) {
+	for (int cnt = 0; cnt < 0xFFFF; cnt++) {
 		util_sleep(DEF_SLEEPTIME);
 		parport_write(PP_CONTROL, 0x02 + 1);
 		util_sleep(DEF_SLEEPTIME);
