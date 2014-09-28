@@ -92,38 +92,18 @@ int main(int argc, char *argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	// TEST TEST TEST
-/*
-	parport_write(PP_CONTROL, 0x0F);
-	util_sleep(DEF_SLEEPTIME);
-	for (int cnt = 0; cnt < 0xFFFF; cnt++) {
-		parport_write(PP_DATA, cnt);
-		util_sleep(DEF_SLEEPTIME);
-		parport_write(PP_CONTROL, 0x0A);
-		parport_write(PP_DATA, cnt);
-		util_sleep(DEF_SLEEPTIME);
-		parport_write(PP_CONTROL, 0x0B);
+	elf_setControlSwitches(0x05); // Wait and Write up
+	elf_setControlSwitches(0x01); // Write up
+	for (int cnt = 0; cnt <= 0xFF; cnt++) {
+		elf_setDataSwitches(cnt & 0xFF);
+		elf_setControlSwitches(0x01);
+		elf_setControlSwitches(0x09);
 	}
 
-	parport_write(PP_CONTROL, 0x01);
-	util_sleep(DEF_SLEEPTIME);
-	parport_write(PP_CONTROL, 0x03);
-	util_sleep(DEF_SLEEPTIME);
-	for (int cnt = 0; cnt < 0xFFFF; cnt++) {
-		util_sleep(DEF_SLEEPTIME);
-		parport_write(PP_CONTROL, 0x02 + 1);
-		util_sleep(DEF_SLEEPTIME);
-		fprintf(stdout, "CONTENT %.2X\n", parport_read(PP_STATUS));
-		parport_write(PP_CONTROL, 0x02 + 0);
-		util_sleep(DEF_SLEEPTIME);
-		fprintf(stdout, "CONTENT %.2X\n", parport_read(PP_STATUS));
-	}
-*/	
 
-	elf_setControlSwitches(0x00); // All Down
 	elf_setControlSwitches(0x04); // Wait up
 	elf_setControlSwitches(0x00); // All Down
-	for (int cnt = 0; cnt < 0xFFFF; cnt++) {
+	for (int cnt = 0; cnt <= 0xFF; cnt++) {
 		fprintf(stdout, "0x%.4X - DATA -> 0x%.2X\n", cnt, elf_readDataAndAdvance());
 	}
 

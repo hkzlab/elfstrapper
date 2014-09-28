@@ -4,7 +4,7 @@
 
 #include "logger/logger.h"
 
-#define DEF_SLEEPTIME 100
+#define DEF_SLEEPTIME 1000
 static unsigned long elf_delaytime = DEF_SLEEPTIME;
 
 void elf_setDelayTime(unsigned long delay) {
@@ -40,12 +40,15 @@ uint8_t elf_readDataAndAdvance(void) {
 	
 	uint8_t nibble_a, nibble_b;
 
-	elf_setControlSwitches(0x00); // Every control switch off
+	elf_setControlSwitches(0x08); // Every control switch off
 	nibble_a = parport_read(PP_STATUS); // Read the first nibble
-	elf_setControlSwitches(0x08); // "Push" the IN button
+	elf_setControlSwitches(0x00); // "Push" the IN button
 	nibble_b = parport_read(PP_STATUS); // Read the second nibble
-	elf_setControlSwitches(0x00); // "Release" the IN button. This advances the counter
+	elf_setControlSwitches(0x08); // "Release" the IN button. This advances the counter
 
-	return ((nibble_a & 0xF0) >> 4) | (nibble_b & 0xF0);
+	nibble_a = (nibble_a & 0x7F) | ((~nibble_a) & 0x80);
+	nibble_b = (nibble_b & 0x7F) | ((~nibble_b) & 0x80);
+
+	return ((nibble_b >> 4) & 0x0F) | (nibble_a & 0xF0);
 }
 
