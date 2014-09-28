@@ -1,5 +1,7 @@
 #include "parport.h"
 
+#include "logger/logger.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -15,7 +17,7 @@
 static int pp_fd = -1;
 
 void parport_deinit() {
-	fprintf(stdout, "parport::parport_deinit()\n");
+	logger_print(LOGR_VERB, "parport::parport_deinit()\n");
 
 	if (pp_fd != -1) {
 		ioctl(pp_fd, PPRELEASE);
@@ -26,8 +28,9 @@ void parport_deinit() {
 }
 
 int8_t parport_init(const char *pdev) {
-	fprintf(stdout, "parport::parport_init(%s)\n", pdev);
-	
+	logger_print(LOGR_VERB, "parport::parport_init(%s)\n", pdev);
+
+	// Open parallel port device file
 	pp_fd = open(pdev, O_RDWR);
 	if (pp_fd == -1) {
 		perror("open");
@@ -35,6 +38,7 @@ int8_t parport_init(const char *pdev) {
 		return -1;
 	}
 
+	// Claim exclusive access to it
 	if (ioctl(pp_fd, PPCLAIM)) {
 		perror("PPCLAIM");
 		close(pp_fd);
@@ -42,6 +46,7 @@ int8_t parport_init(const char *pdev) {
 		return -1;
 	}
 
+	// Set compatibility mode for the parallel port
 	int mode = IEEE1284_MODE_COMPAT;
 	if (ioctl(pp_fd, PPSETMODE, &mode)) {
 		perror("PPSETMODE");
@@ -50,6 +55,7 @@ int8_t parport_init(const char *pdev) {
 		return -1;
    }
 
+	// Set data direction to output
 	int ddir = 0;
 	if (ioctl(pp_fd, PPDATADIR, &ddir)) {
 		perror("PPDATADIR");
@@ -62,7 +68,7 @@ int8_t parport_init(const char *pdev) {
 }
 
 uint8_t parport_read(PP_REGISTER reg) {
-	fprintf(stdout, "parport::parport_read(%u)\n", reg);
+	logger_print(LOGR_VERB, "parport::parport_read(%u)\n", reg);
 	
 	uint8_t data = 0;
 
@@ -80,7 +86,7 @@ uint8_t parport_read(PP_REGISTER reg) {
 }
 
 void parport_write(PP_REGISTER reg, uint8_t data) {
-	fprintf(stdout, "parport::parport_write(%u, 0x%.2X)\n", reg, data);
+	logger_print(LOGR_VERB, "parport::parport_write(%u, 0x%.2X)\n", reg, data);
 
 	switch(reg) {
 		case PP_DATA:
