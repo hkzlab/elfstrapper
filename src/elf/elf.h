@@ -26,4 +26,8 @@ uint8_t elf_readDataAndAdvance(void);
  */
 void elf_setDelayTime(unsigned long delay);
 
+
+void elf_hl_uploadRam(uint16_t address, uint8_t *buffer, uint16_t len);
+void elf_hl_downloadRam(uint16_t address, uint8_t *buffer, uint16_t len);
+
 #endif /* _ELF_HEADER_ */

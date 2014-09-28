@@ -52,3 +52,20 @@ uint8_t elf_readDataAndAdvance(void) {
 	return ((nibble_b >> 4) & 0x0F) | (nibble_a & 0xF0);
 }
 
+void elf_hl_uploadRam(uint16_t address, uint8_t *buffer, uint16_t len) {
+	;
+}
+
+void elf_hl_downloadRam(uint16_t address, uint8_t *buffer, uint16_t len) {
+	uint8_t data;
+
+	elf_setControlSwitches(0x04); // Wait up
+	elf_setControlSwitches(0x00); // All Down
+	for (int cur_addr = 0; cur_addr < (address + len); cur_addr++) {
+		data = elf_readDataAndAdvance();
+		
+		if (cur_addr >= address)
+			buffer[cur_addr - address] = data;
+	}
+}
+
