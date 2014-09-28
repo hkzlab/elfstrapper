@@ -10,6 +10,7 @@
 
 #include "logger/logger.h"
 #include "parport/parport.h"
+#include "elf/elf.h"
 #include "utils/utils.h"
 
 
@@ -25,7 +26,7 @@ int main(int argc, char *argv[]) {
 	uint8_t h_flag = 0, v_flag = 0, d_flag = 0; // Option flags
 
 	// Parse the command line
-	while ((opt = getopt(argc, argv, "d:D:hv")) != -1) {
+	while ((opt = getopt(argc, argv, "d:D:w:hv")) != -1) {
 		switch(opt) {
 			case 'd': // Parallel port to use
 				d_flag = 1;
@@ -37,6 +38,9 @@ int main(int argc, char *argv[]) {
 			case 'h': // Help requested
 				h_flag = 1;
 				break;
+			case 'w': // Set parallel port delay in uSecs
+				elf_setDelayTime(atol(optarg));
+				break;
 			case 'D': { // Set verbosity level
 				int llevel = atoi(optarg);
  				
@@ -46,11 +50,11 @@ int main(int argc, char *argv[]) {
 					return EXIT_FAILURE;
  				}
  
-				logger_setVerbosity(llevel);;
+				logger_setVerbosity(llevel);
 				break;
 			}
 			case '?':
-				if (optopt == 'd') {
+				if (optopt == 'd' || optopt == 'D' || optopt == 'w') {
 					fprintf(stderr, "Option -%c requires an argument.\n", optopt);
 				} else if (isprint(optopt)) {
 					fprintf(stderr, "Unknown option '-%c'.\n", optopt);
@@ -119,9 +123,10 @@ int main(int argc, char *argv[]) {
 }
 
 static void print_usage(char *progname) {
-	fprintf(stdout, "Usage: %s -d PARALLEL_DEVICE [-D level] [-v] [-h]\n"
+	fprintf(stdout, "Usage: %s -d PARALLEL_DEVICE [-D level] [-w delay] [-v] [-h]\n"
 			"\t-d PARALLEL_DEVICE\tDefine the parallel port to use.\n"
 			"\t-D level\t\tLogging verbosity, ranging from 0 to 3\n"
+			"\t-w delay\t\tDelay time between parport commands, in uSeconds.\n"
 			"\t-h\t\t\tPrint this help\n"
 			"\t-v\t\t\tPrint version\n", progname);
 }

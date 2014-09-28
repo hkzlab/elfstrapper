@@ -2,14 +2,20 @@
 #include "parport/parport.h"
 #include "utils/utils.h"
 
-#define DEF_SLEEPTIME 1000
-static long elf_delaytime = DEF_SLEEPTIME;
+#include "logger/logger.h"
 
-void elf_setDelayTime(long delay) {
+#define DEF_SLEEPTIME 1000
+static unsigned long elf_delaytime = DEF_SLEEPTIME;
+
+void elf_setDelayTime(unsigned long delay) {
+	logger_print(LOGR_EXTN, "elf::elf_setDelayTime(%lu)\n", delay);
+	
 	elf_delaytime = delay;
 }
 
 void elf_setControlSwitches(uint8_t sw_bitmask) {
+	logger_print(LOGR_EXTN, "elf::elf_setControlSwitches(0x%.2X)\n", sw_bitmask);
+	
 	uint8_t ctrl_bitmask = 0;
 
  	// Correctly convert the bitmask	
@@ -23,6 +29,23 @@ void elf_setControlSwitches(uint8_t sw_bitmask) {
 }
 
 void elf_setDataSwitches(uint8_t sw_bitmask) {
+	logger_print(LOGR_EXTN, "elf::elf_setDataSwitches(0x%.2X)\n", sw_bitmask);
+	
 	parport_write(PP_DATA, sw_bitmask);
 	util_sleep(elf_delaytime);
 }
+
+uint8_t elf_readDataAndAdvance(void) {
+	logger_print(LOGR_EXTN, "elf::elf_readDataAndAdvance()\n");
+	
+	uint8_t nibble_a, nibble_b;
+
+	elf_setControlSwitches(0x00); // Every control switch off
+	nibble_a = parport_read(PP_STATUS); // Read the first nibble
+	elf_setControlSwitches(0x01); // "Push" the IN button
+	nibble_b = parport_read(PP_STATUS); // Read the second nibble
+	elf_setControlSwitches(0x00); // "Release" the IN button. This advances the counter
+
+	return ((nibble_a & 0xF0) >> 4) | (nibble_b & 0xF0);
+}
+

@@ -4,6 +4,6 @@
 #include "common/defines.h"
 #include "common/cmn_datatypes.h"
 
-int util_sleep(long usec);
+int util_sleep(unsigned long usec);
 
 #endif /* _UTILS_HEADER_ */

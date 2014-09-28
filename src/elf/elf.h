@@ -20,8 +20,10 @@ void elf_setControlSwitches(uint8_t sw_bitmask);
  */
 void elf_setDataSwitches(uint8_t sw_bitmask);
 
+uint8_t elf_readDataAndAdvance(void);
+
 /* Delay time between elf control instructions. In uSecs.
  */
-void elf_setDelayTime(long delay);
+void elf_setDelayTime(unsigned long delay);
 
 #endif /* _ELF_HEADER_ */

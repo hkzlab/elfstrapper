@@ -2,7 +2,7 @@
 
 #include <time.h>
 
-int util_sleep(long usec) {
+int util_sleep(unsigned long usec) {
 	struct timespec sleep_time;
  
 	sleep_time.tv_sec = usec / 1000000;
