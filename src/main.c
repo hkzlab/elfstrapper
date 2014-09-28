@@ -92,6 +92,7 @@ int main(int argc, char *argv[]) {
 		return EXIT_FAILURE;
 	}
 
+	/*
 	elf_setControlSwitches(0x05); // Wait and Write up
 	elf_setControlSwitches(0x01); // Write up
 	for (int cnt = 0; cnt <= 0xFF; cnt++) {
@@ -99,7 +100,20 @@ int main(int argc, char *argv[]) {
 		elf_setControlSwitches(0x01);
 		elf_setControlSwitches(0x09);
 	}
+*/
+	elf_setControlSwitches(0x04); // Wait and Write up
+	elf_setControlSwitches(0x00); // All Down
+	for (int cnt = 0; cnt <= 0x10; cnt++) {
+		elf_setControlSwitches(0x00);
+		elf_setControlSwitches(0x08);
+	}
 
+	elf_setControlSwitches(0x01); // Write up
+	for (int cnt = 0; cnt <= 0xFF; cnt++) {
+		elf_setDataSwitches(cnt & 0xFF);
+		elf_setControlSwitches(0x01);
+		elf_setControlSwitches(0x09);
+	}
 
 	elf_setControlSwitches(0x04); // Wait up
 	elf_setControlSwitches(0x00); // All Down
