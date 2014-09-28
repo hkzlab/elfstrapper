@@ -119,6 +119,14 @@ int main(int argc, char *argv[]) {
 		fprintf(stdout, "CONTENT %.2X\n", parport_read(PP_STATUS));
 	}
 */	
+
+	elf_setControlSwitches(0x00); // All Down
+	elf_setControlSwitches(0x04); // Wait up
+	elf_setControlSwitches(0x00); // All Down
+	for (int cnt = 0; cnt < 0xFFFF; cnt++) {
+		fprintf(stdout, "0x%.4X - DATA -> 0x%.2X\n", cnt, elf_readDataAndAdvance());
+	}
+
 	return EXIT_SUCCESS;
 }
 
