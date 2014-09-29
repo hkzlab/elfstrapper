@@ -17,16 +17,17 @@
 #define PPORT_NAME_BUF_SIZE 50
 #define FNAME_BUF_SIZE 256
 static char parport_device[PPORT_NAME_BUF_SIZE];
+static char filename[FNAME_BUF_SIZE];
 
 static void exit_cleanup(); // Called at exit to provide final cleanup
 static void print_usage(char *progname); // Small utility function to print the command help
 
 int main(int argc, char *argv[]) {
 	int opt;
-	uint8_t h_flag = 0, v_flag = 0, d_flag = 0, R_flag = 0; // Option flags
+	uint8_t h_flag = 0, v_flag = 0, d_flag = 0, R_flag = 0, f_flag = 0; // Option flags
 
 	// Parse the command line
-	while ((opt = getopt(argc, argv, "d:D:w:Rhv")) != -1) {
+	while ((opt = getopt(argc, argv, "d:D:w:f:Rhv")) != -1) {
 		switch(opt) {
 			case 'd': // Parallel port to use
 				d_flag = 1;
@@ -44,6 +45,10 @@ int main(int argc, char *argv[]) {
 			case 'R':
 				R_flag = 1;
 				break;
+			case 'f':
+				f_flag = 1;
+				strncpy(filename, optarg, FNAME_BUF_SIZE - 1);
+				break;
 			case 'D': { // Set verbosity level
 				int llevel = atoi(optarg);
  				
@@ -57,7 +62,7 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 			case '?':
-				if (optopt == 'd' || optopt == 'D' || optopt == 'w') {
+				if (optopt == 'd' || optopt == 'D' || optopt == 'w' || optopt == 'f') {
 					fprintf(stderr, "Option -%c requires an argument.\n", optopt);
 				} else if (isprint(optopt)) {
 					fprintf(stderr, "Unknown option '-%c'.\n", optopt);
@@ -95,34 +100,24 @@ int main(int argc, char *argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	/*
-	elf_setControlSwitches(0x04); // Wait and Write up
-	elf_setControlSwitches(0x00); // All Down
-	for (int cnt = 0; cnt <= 0x10; cnt++) {
-		elf_setControlSwitches(0x00);
-		elf_setControlSwitches(0x08);
+	if (f_flag) {
+		uint8_t f_buf[0xFFFF];
+		FILE *f_source = fopen(filename, "rb");
+
+		if (f_source == NULL) {
+			perror(filename);
+			return EXIT_FAILURE;
+		}
+
+		long f_size = fread(f_buf, 1, 0xFFFF, f_source);
+		fclose(f_source);
+	
+		fprintf(stdout, "Uploading data from file %s...\n", filename);
+
+		elf_hl_uploadRam(0x00, f_buf, f_size);
 	}
 
-	elf_setControlSwitches(0x01); // Write up
-	for (int cnt = 0; cnt <= 0xFF; cnt++) {
-		elf_setDataSwitches(cnt & 0xFF);
-		elf_setControlSwitches(0x01);
-		elf_setControlSwitches(0x09);
-	}
-*/
-
-	uint8_t test_buf[] = {0xF8, 0x08, 0xB2, 0x22, 0x92, 0x3A, 0x03, 0xCD, 0x7B, 0x38, 0x7A, 0x30, 0x00};
-	elf_hl_uploadRam(0x00, test_buf, sizeof(test_buf));
-
-	/*
-	elf_setControlSwitches(0x04); // Wait up
-	elf_setControlSwitches(0x00); // All Down
-	for (int cnt = 0; cnt <= 0xFF; cnt++) {
-		fprintf(stdout, "0x%.4X - DATA -> 0x%.2X\n", cnt, elf_readDataAndAdvance());
-	}
-	*/
-
-	if(R_flag) {
+	if (R_flag) {
 		fprintf(stdout, "Setting the card into RUN mode and going to sleep...\nPress Ctrl-C to quit.\n");
 		elf_hl_runCode(0x0000);
 		while(1) util_sleep(10);
@@ -132,10 +127,11 @@ int main(int argc, char *argv[]) {
 }
 
 static void print_usage(char *progname) {
-	fprintf(stdout, "Usage: %s -d PARALLEL_DEVICE [-D level] [-w delay] [-v] [-h]\n"
+	fprintf(stdout, "Usage: %s -d PARALLEL_DEVICE [-D level] [-w delay] [-R] [-v] [-h]\n"
 			"\t-d PARALLEL_DEVICE\tDefine the parallel port to use.\n"
 			"\t-D level\t\tLogging verbosity, ranging from 0 to 3\n"
 			"\t-w delay\t\tDelay time between parport commands, in uSeconds.\n"
+			"\t-f filename\t\tSource/Destination filename.\n"
 			"\t-R\t\tPut the card in RUN mode.\n"
 			"\t-h\t\t\tPrint this help\n"
 			"\t-v\t\t\tPrint version\n", progname);
