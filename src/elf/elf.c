@@ -53,19 +53,57 @@ uint8_t elf_readDataAndAdvance(void) {
 }
 
 void elf_hl_uploadRam(uint16_t address, uint8_t *buffer, uint16_t len) {
-	;
+	logger_print(LOGR_EXTN, "elf::elf_hl_uploadRam(0x%.4X, 0x%.8X, 0x%.4X)\n", address, buffer, len);
+	
+	uint32_t cur_addr = 0, addr_difference;
+
+	elf_setControlSwitches(0x04); // Wait up
+	elf_setControlSwitches(0x00); // All Down
+
+	// Skip to the address 
+	for (cur_addr = 0; cur_addr < address; cur_addr++) {
+		elf_setControlSwitches(0x00);
+		elf_setControlSwitches(0x08);
+	}
+
+	addr_difference = cur_addr;
+	elf_setControlSwitches(0x01); // Write up
+	for (; cur_addr < (address + len); cur_addr++) {
+		elf_setDataSwitches(buffer[cur_addr - addr_difference]);
+		elf_setControlSwitches(0x01);
+		elf_setControlSwitches(0x09);
+	}	
 }
 
 void elf_hl_downloadRam(uint16_t address, uint8_t *buffer, uint16_t len) {
+	logger_print(LOGR_EXTN, "elf::elf_hl_downloadRam(0x%.4X, 0x%.8X, 0x%.4X)\n", address, buffer, len);
+	
 	uint8_t data;
 
 	elf_setControlSwitches(0x04); // Wait up
 	elf_setControlSwitches(0x00); // All Down
-	for (int cur_addr = 0; cur_addr < (address + len); cur_addr++) {
+	for (uint32_t cur_addr = 0; cur_addr < (address + len); cur_addr++) {
 		data = elf_readDataAndAdvance();
 		
 		if (cur_addr >= address)
 			buffer[cur_addr - address] = data;
 	}
 }
+
+void elf_hl_runCode(uint16_t address) {
+	logger_print(LOGR_EXTN, "elf::elf_hl_runCode(0x%.4X)\n", address);
+	
+	elf_setControlSwitches(0x04); // Wait up
+	elf_setControlSwitches(0x00); // All Down
+
+	// Skip to the address 
+	for (uint32_t cur_addr = 0; cur_addr < address; cur_addr++) {
+		elf_setControlSwitches(0x00);
+		elf_setControlSwitches(0x08);
+	}
+
+	// And then run
+	elf_setControlSwitches(0x06);
+}
+
 
