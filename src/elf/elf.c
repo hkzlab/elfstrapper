@@ -84,9 +84,10 @@ void elf_hl_downloadRam(uint16_t address, uint8_t *buffer, uint16_t len) {
 	elf_setControlSwitches(0x00); // All Down
 	for (uint32_t cur_addr = 0; cur_addr < (address + len); cur_addr++) {
 		data = elf_readDataAndAdvance();
-		
-		if (cur_addr >= address)
+	
+		if (cur_addr >= address) {
 			buffer[cur_addr - address] = data;
+		}
 	}
 }
 

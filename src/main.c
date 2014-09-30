@@ -22,13 +22,13 @@ static char filename[FNAME_BUF_SIZE];
 static void exit_cleanup(); // Called at exit to provide final cleanup
 static void print_usage(char *progname); // Small utility function to print the command help
 
-static void eo_runMode(void);
-static void eo_uploadFromFile(uint16_t address);
-static void eo_downloadToFile(uint16_t address, uint16_t size);
+static void eo_runMode(uint16_t address);
+static int8_t eo_uploadFromFile(uint16_t address);
+static int8_t eo_downloadToFile(uint16_t address, uint16_t size);
 
 int main(int argc, char *argv[]) {
 	int opt;
-	uint8_t h_flag = 0, v_flag = 0, d_flag = 0, R_flag = 0, f_flag = 0, F_flag = 0, a_flag = 0, l_flag = 0; // Option flags
+	uint8_t h_flag = 0, v_flag = 0, d_flag = 0, R_flag = 0, f_flag = 0, F_flag = 0; // Option flags
 	uint16_t start_address = 0x0000;
 	uint16_t data_len = 0xFFFF;
 
@@ -60,10 +60,10 @@ int main(int argc, char *argv[]) {
 				strncpy(filename, optarg, FNAME_BUF_SIZE - 1);
 				break;
 			case 'a': // Start address
-				a_flag = 1;
+				start_address = atoi(optarg);
 				break;
 			case 'l':
-				l_flag = 1;
+				data_len = atoi(optarg);
 				break;
 			case 'D': { // Set verbosity level
 				int llevel = atoi(optarg);
@@ -121,14 +121,19 @@ int main(int argc, char *argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	if (f_flag) 
-		eo_uploadFromFile(start_address);
-	else if (F_flag)
-		eo_downloadToFile(start_address, data_len);
+	int ret_val = -1;
 
+	if (f_flag) 
+		ret_val = eo_uploadFromFile(start_address);
+	else if (F_flag)
+		ret_val = eo_downloadToFile(start_address, data_len);
+
+	if (ret_val < 0) {
+		return EXIT_FAILURE;
+	}
 
 	if (R_flag)
-		eo_runMode();
+		eo_runMode(start_address);
 
 	return EXIT_SUCCESS;
 }
@@ -140,7 +145,7 @@ static void print_usage(char *progname) {
 			"\t-w delay\t\tDelay time between parport commands, in uSeconds.\n"
 			"\t-f filename\t\tSource filename.\n"
 			"\t-F filename\t\tDestination filename.\n"
-			"\t-R\t\tPut the card in RUN mode.\n"
+			"\t-R\t\t\tPut the card in RUN mode.\n"
 			"\t-h\t\t\tPrint this help\n"
 			"\t-v\t\t\tPrint version\n", progname);
 }
@@ -154,19 +159,19 @@ static void exit_cleanup() {
 }
 
 /*** *** ***/
-static void eo_runMode(void) {
+static void eo_runMode(uint16_t address) {
 	fprintf(stdout, "Setting the card into RUN mode and going to sleep...\nPress Ctrl-C to quit.\n");
-	elf_hl_runCode(0x0000);
+	elf_hl_runCode(address);
 	while(1) util_sleep(10);
 }
 
-static void eo_uploadFromFile(uint16_t address) {
+static int8_t eo_uploadFromFile(uint16_t address) {
 		uint8_t f_buf[0xFFFF];
 		FILE *f_source = fopen(filename, "rb");
 
 		if (f_source == NULL) {
 			perror(filename);
-			return EXIT_FAILURE;
+			return -1;
 		}
 
 		long f_size = fread(f_buf, 1, 0xFFFF, f_source);
@@ -175,27 +180,31 @@ static void eo_uploadFromFile(uint16_t address) {
 		fprintf(stdout, "Uploading data from file %s...\n", filename);
 
 		elf_hl_uploadRam(address, f_buf, f_size);
+
+		return 1;
 }
 
-static void eo_downloadToFile(uint16_t address, uint16_t size) {
+static int8_t eo_downloadToFile(uint16_t address, uint16_t size) {
 	uint8_t f_buf[0xFFFF];
 	FILE *f_dest = fopen(filename, "wb+");
 
 	if (f_dest == NULL) {
 		perror(filename);
-		return EXIT_FAILURE;
+		return -1;
 	}
 		
 	fprintf(stdout, "Downloading data to file %s...\n", filename);
 
 	elf_hl_downloadRam(address, f_buf, size);
 
-	if (fwrite(f_buf, size, 1, f_dest) != size) {
+	if (fwrite(f_buf, 1, size, f_dest) != size) {
 		perror(filename);
 		fclose(f_dest);
 
-		return EXIT_FAILURE;
+		return -1;
 	}
 
-	fclose(filename);
+	fclose(f_dest);
+
+	return 1;
 }
