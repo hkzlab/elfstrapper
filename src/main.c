@@ -145,6 +145,8 @@ static void print_usage(char *progname) {
 			"\t-w delay\t\tDelay time between parport commands, in uSeconds.\n"
 			"\t-f filename\t\tSource filename.\n"
 			"\t-F filename\t\tDestination filename.\n"
+			"\t-a address\t\tStart address.\n"
+			"\t-l length\t\tData length.\n"
 			"\t-R\t\t\tPut the card in RUN mode.\n"
 			"\t-h\t\t\tPrint this help\n"
 			"\t-v\t\t\tPrint version\n", progname);
@@ -166,7 +168,7 @@ static void eo_runMode(uint16_t address) {
 }
 
 static int8_t eo_uploadFromFile(uint16_t address) {
-		uint8_t f_buf[0xFFFF];
+		uint8_t f_buf[ELFMC_MEMSIZE];
 		FILE *f_source = fopen(filename, "rb");
 
 		if (f_source == NULL) {
@@ -174,7 +176,7 @@ static int8_t eo_uploadFromFile(uint16_t address) {
 			return -1;
 		}
 
-		long f_size = fread(f_buf, 1, 0xFFFF, f_source);
+		long f_size = fread(f_buf, 1, ELFMC_MEMSIZE, f_source);
 		fclose(f_source);
 	
 		fprintf(stdout, "Uploading data from file %s...\n", filename);
@@ -185,8 +187,11 @@ static int8_t eo_uploadFromFile(uint16_t address) {
 }
 
 static int8_t eo_downloadToFile(uint16_t address, uint16_t size) {
-	uint8_t f_buf[0xFFFF];
+	uint8_t f_buf[ELFMC_MEMSIZE];
 	FILE *f_dest = fopen(filename, "wb+");
+
+	// Recalculate size
+	size = ((address + size) > ELFMC_MEMSIZE) ? (ELFMC_MEMSIZE - address) : size;
 
 	if (f_dest == NULL) {
 		perror(filename);
