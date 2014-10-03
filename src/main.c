@@ -5,6 +5,9 @@
 
 #include <getopt.h>
 
+#include <unistd.h>
+#include <termios.h>
+
 #include "common/defines.h"
 #include "common/cmn_datatypes.h"
 
@@ -19,6 +22,8 @@
 static char parport_device[PPORT_NAME_BUF_SIZE];
 static char filename[FNAME_BUF_SIZE];
 
+static struct termios tos_org_opts, tos_new_opts;
+
 static void exit_cleanup(); // Called at exit to provide final cleanup
 static void print_usage(char *progname); // Small utility function to print the command help
 
@@ -31,6 +36,10 @@ int main(int argc, char *argv[]) {
 	uint8_t h_flag = 0, v_flag = 0, d_flag = 0, R_flag = 0, f_flag = 0, F_flag = 0; // Option flags
 	uint16_t start_address = 0x0000;
 	uint16_t data_len = 0xFFFF;
+
+	// Save terminal options
+	tcgetattr(STDIN_FILENO, &tos_org_opts);
+	memcpy(&tos_new_opts, &tos_org_opts, sizeof(tos_new_opts));
 
 	// Parse the command line
 	while ((opt = getopt(argc, argv, "d:D:w:f:F:Rhva:l:")) != -1) {
@@ -157,14 +166,82 @@ static void exit_cleanup() {
 	// De-initialize the parallel port
 	parport_deinit();
 
+	// Restore terminal
+	tcsetattr(STDIN_FILENO, TCSANOW, &tos_org_opts);
+
 	return;
 }
 
 /*** *** ***/
 static void eo_runMode(uint16_t address) {
+	uint8_t dat_sw_bitmask = 0x00, ctrl_sw_bitmask = 0x06;
+	int16_t dat_sel_bit = -1, ctrl_sel_bit = -1;
+
+	// Force new terminal options
+	tos_new_opts.c_lflag &= ~(ICANON | ECHO | ECHOE | ECHOK | ECHONL | ICRNL);
+    tcsetattr(STDIN_FILENO, TCSANOW, &tos_new_opts);
+
 	fprintf(stdout, "Setting the card into RUN mode and going to sleep...\nPress Ctrl-C to quit.\n");
 	elf_hl_runCode(address);
-	while(1) util_sleep(10);
+
+	while(1) {
+		dat_sel_bit = -1;
+		ctrl_sel_bit = -1;
+
+		switch(getc(stdin)) {
+			case 'q':
+				dat_sel_bit = 7;
+				break;
+			case 'w':
+				dat_sel_bit = 6;
+				break;
+			case 'e':
+				dat_sel_bit = 5;
+				break;
+			case 'r':
+				dat_sel_bit = 4;
+				break;
+			case 't':
+				dat_sel_bit = 3;
+				break;
+			case 'y':
+				dat_sel_bit = 2;
+				break;
+			case 'u':
+				dat_sel_bit = 1;
+				break;
+			case 'i':
+				dat_sel_bit = 0;
+				break;
+			case 'a':
+				ctrl_sel_bit = 3;
+				break;
+			case 's':
+				ctrl_sel_bit = 2;
+				break;
+			case 'd':
+				ctrl_sel_bit = 1;
+				break;
+			case 'f':
+				ctrl_sel_bit = 0;
+				break;
+			default:
+				break;
+		}
+
+		if (dat_sel_bit >= 0) {
+			dat_sw_bitmask ^= (0x01 << dat_sel_bit);
+		}
+
+		elf_setDataSwitches(dat_sw_bitmask);
+	
+		if (ctrl_sel_bit >= 0) {
+			ctrl_sw_bitmask ^= (0x01 << ctrl_sel_bit);
+			elf_setControlSwitches(ctrl_sw_bitmask);
+		}
+
+		util_sleep(0);
+	}
 }
 
 static int8_t eo_uploadFromFile(uint16_t address) {
